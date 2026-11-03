@@ -1,13 +1,20 @@
 import { Check, Minus, X } from "lucide-react"
+import { useMemo } from "react"
+import { useData } from "@/hooks/useData"
 import type { TicketHealth } from "@/lib/health/checks"
+import { suggestionsFor } from "@/lib/health/hints"
 import { cn } from "@/lib/utils"
 import { ImpactChips } from "./ImpactChips"
 import { SeverityBadge } from "./SeverityBadge"
 import { SEVERITY_META } from "./severity"
+import { SuggestionNote } from "./SuggestionNote"
 
-/** The expanded row: every required field for the ticket's type, and for each gap why it matters and what it affects. */
+/** The expanded row: every required field for the ticket's type, and for each gap why it matters, what it affects and a suggested value. */
 export function TicketDetail({ health }: { health: TicketHealth }) {
+  const { dataset } = useData()
   const { issue, fields, gaps } = health
+  // Only computed for expanded rows.
+  const suggestions = useMemo(() => suggestionsFor(issue, gaps.map((g) => g.field), dataset), [issue, gaps, dataset])
   return (
     <div className="grid gap-6 py-2 @3xl:grid-cols-[minmax(14rem,1fr)_2fr]">
       <section aria-label={`Required fields for ${issue.key}`}>
@@ -40,13 +47,14 @@ export function TicketDetail({ health }: { health: TicketHealth }) {
       <section aria-label={`What to fix on ${issue.key}`} className="space-y-4">
         <h3 className="text-xs font-medium text-muted-foreground">What to fix</h3>
         {gaps.map((gap) => (
-          <div key={gap.field} className="space-y-1.5">
+          <div key={gap.field} className="space-y-2">
             <p className="flex flex-wrap items-center gap-2 text-sm font-medium">
               {gap.label}
               <SeverityBadge severity={gap.severity} className="text-xs font-normal text-muted-foreground" />
             </p>
             <p className="text-sm text-muted-foreground">{gap.why}</p>
             <ImpactChips affects={gap.affects} withPage />
+            <SuggestionNote issue={issue} gap={gap} suggestion={suggestions[gap.field]} />
           </div>
         ))}
       </section>
