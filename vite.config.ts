@@ -11,9 +11,9 @@ export default defineConfig(({ mode }) => {
     base: env.VITE_BASE_PATH || '/',
     plugins: [react(), tailwindcss()],
     build: {
-      // The mock export loads as its own chunk. The entry is still ~520 KB (React, Radix, zod),
-      // all needed before the first render, hence the raised limit (the Jira Dashboard uses 800).
-      chunkSizeWarningLimit: 600,
+      // The mock export loads as its own chunk. The entry is still ~600 KB (React, Radix, cmdk, zod),
+      // all needed before the first render, hence the raised limit (the same as the Jira Dashboard's).
+      chunkSizeWarningLimit: 800,
     },
     resolve: {
       alias: {
