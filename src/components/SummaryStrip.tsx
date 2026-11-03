@@ -6,9 +6,9 @@ import { cn } from "@/lib/utils"
 import { SEVERITY_META } from "./severity"
 
 /** Small stat tiles for the current filter. Numbers stay in text colour; severity is carried by icon and label. */
-export function SummaryStrip({ summary }: { summary: Summary }) {
+export function SummaryStrip({ summary, resolved }: { summary: Summary; resolved: { full: number; partial: number } }) {
   return (
-    <div className="grid gap-3 @2xl:grid-cols-3" role="group" aria-label="Summary for the current filter">
+    <div className="grid gap-3 @2xl:grid-cols-2 @5xl:grid-cols-[1fr_1.5fr_1fr_1fr]" role="group" aria-label="Summary for the current filter">
       <Tile label="Tickets needing updates">
         <span className="text-2xl font-semibold tabular-nums">{summary.needing}</span>
         <span className="ml-1.5 text-sm text-muted-foreground tabular-nums">of {summary.total}</span>
@@ -38,6 +38,12 @@ export function SummaryStrip({ summary }: { summary: Summary }) {
         ) : (
           <span className="text-xl font-semibold text-muted-foreground">None</span>
         )}
+      </Tile>
+      <Tile label="Resolved locally">
+        <span className="text-2xl font-semibold tabular-nums">{resolved.full}</span>
+        <span className="ml-1.5 text-sm text-muted-foreground tabular-nums">
+          resolved{resolved.partial > 0 && ` · ${resolved.partial} partly`}
+        </span>
       </Tile>
     </div>
   )

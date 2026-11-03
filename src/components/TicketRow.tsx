@@ -1,31 +1,38 @@
-import { ChevronRight } from "lucide-react"
+import { ChevronRight, CircleCheck } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { TableCell, TableRow } from "@/components/ui/table"
 import { useData } from "@/hooks/useData"
 import type { TicketHealth } from "@/lib/health/checks"
 import { jiraIssueUrl } from "@/lib/jira/adapter"
+import type { Resolution } from "@/lib/resolutions/types"
 import { cn } from "@/lib/utils"
 import { ImpactChips } from "./ImpactChips"
 import { IssueKeyLink, JiraLink } from "./JiraLink"
 import { MissingFieldChip } from "./MissingFieldChip"
+import { ResolvedNote } from "./ResolvedNote"
 import { ignoreInteractive } from "./row-click"
 import { SeverityBadge } from "./SeverityBadge"
 import { TicketDetail } from "./TicketDetail"
 import { TicketMeta } from "./TicketMeta"
 import { TypeIcon } from "./TypeIcon"
 
-type Props = {
+export type RowProps = {
   health: TicketHealth
   expanded: boolean
   onToggle: () => void
+  /** Local resolutions for this ticket, if any. */
+  fixes: Resolution[] | undefined
+  onResolve: () => void
+  onUndo: () => void
 }
 
 /** One ticket in the wide table, with its detail underneath when expanded. */
-export function TicketRow({ health, expanded, onToggle }: Props) {
+export function TicketRow({ health, expanded, onToggle, fixes, onResolve, onUndo }: RowProps) {
   const { dataset } = useData()
   const { issue, gaps, severity } = health
   const url = jiraIssueUrl(dataset.meta, issue.key)
   const detailId = `detail-${issue.key}`
+  const resolved = gaps.length === 0
 
   return (
     <>
@@ -61,13 +68,30 @@ export function TicketRow({ health, expanded, onToggle }: Props) {
               <MissingFieldChip key={g.field} gap={g} />
             ))}
           </div>
+          {fixes && <ResolvedNote issueKey={issue.key} resolutions={fixes} full={resolved} onUndo={onUndo} className={resolved ? "" : "mt-2"} />}
         </TableCell>
         <TableCell className="py-3 align-top whitespace-normal">
-          <ImpactChips affects={health.affects} max={2} />
+          {resolved ? <span className="text-muted-foreground">–</span> : <ImpactChips affects={health.affects} max={2} />}
         </TableCell>
-        <TableCell className="py-3 align-top">{severity && <SeverityBadge severity={severity} />}</TableCell>
-        <TableCell className="w-10 py-2 align-top">
-          <JiraLink issueKey={issue.key} url={url} />
+        <TableCell className="py-3 align-top">
+          {severity ? (
+            <SeverityBadge severity={severity} />
+          ) : (
+            <span className="inline-flex items-center gap-1.5 text-sm text-muted-foreground">
+              <CircleCheck className="size-4 text-brand" aria-hidden />
+              Resolved
+            </span>
+          )}
+        </TableCell>
+        <TableCell className="py-2 align-top">
+          <div className="flex items-center justify-end gap-1">
+            {!resolved && (
+              <Button size="sm" className="h-8" onClick={onResolve} aria-label={`Resolve ${issue.key}`}>
+                Resolve
+              </Button>
+            )}
+            <JiraLink issueKey={issue.key} url={url} />
+          </div>
         </TableCell>
       </TableRow>
       {expanded && (

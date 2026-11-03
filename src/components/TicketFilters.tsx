@@ -1,5 +1,7 @@
 import { AlertCircle, CircleUserRound, Layers, ListX, Search, Users, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { Checkbox } from "@/components/ui/checkbox"
+import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import {
   Select,
@@ -26,6 +28,10 @@ type Props = {
   onChange: (next: Filters) => void
   groupBy: GroupBy
   onGroupByChange: (next: GroupBy) => void
+  showResolved: boolean
+  onShowResolvedChange: (next: boolean) => void
+  /** Tickets fixed locally in this filter. */
+  resolvedCount: number
 }
 
 const SPRINT_STATE_LABEL = { active: "active", future: "next", closed: "closed" } as const
@@ -34,7 +40,7 @@ const sprintToValue = (s: SprintFilter) => (typeof s === "number" ? `sprint:${s}
 const valueToSprint = (v: string): SprintFilter => (v.startsWith("sprint:") ? Number(v.slice(7)) : (v as SprintFilter))
 
 /** Search, filters and group-by above the list. */
-export function TicketFilters({ filters, onChange, groupBy, onGroupByChange }: Props) {
+export function TicketFilters({ filters, onChange, groupBy, onGroupByChange, showResolved, onShowResolvedChange, resolvedCount }: Props) {
   const { dataset } = useData()
   const set = (patch: Partial<Filters>) => onChange({ ...filters, ...patch })
 
@@ -144,7 +150,14 @@ export function TicketFilters({ filters, onChange, groupBy, onGroupByChange }: P
         </Button>
       )}
 
-      <div className="ml-auto flex items-center gap-2">
+      <div className="ml-auto flex flex-wrap items-center gap-x-4 gap-y-2">
+        <div className="flex items-center gap-2">
+          <Checkbox id="show-resolved" checked={showResolved} onCheckedChange={(v) => onShowResolvedChange(v === true)} />
+          <Label htmlFor="show-resolved" className="text-xs font-normal">
+            Show resolved{resolvedCount > 0 && <span className="text-muted-foreground tabular-nums"> ({resolvedCount})</span>}
+          </Label>
+        </div>
+        <div className="flex items-center gap-2">
         <span className="text-xs text-muted-foreground" id="group-by-label">
           Group by
         </span>
@@ -166,6 +179,7 @@ export function TicketFilters({ filters, onChange, groupBy, onGroupByChange }: P
             Missing field
           </ToggleGroupItem>
         </ToggleGroup>
+        </div>
       </div>
     </div>
   )

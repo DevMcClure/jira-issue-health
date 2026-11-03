@@ -46,6 +46,7 @@ export function TicketDetail({ health }: { health: TicketHealth }) {
 
       <section aria-label={`What to fix on ${issue.key}`} className="space-y-4">
         <h3 className="text-xs font-medium text-muted-foreground">What to fix</h3>
+        {gaps.length === 0 && <p className="text-sm text-muted-foreground">Nothing left to fix: every required field is filled in.</p>}
         {gaps.map((gap) => (
           <div key={gap.field} className="space-y-2">
             <p className="flex flex-wrap items-center gap-2 text-sm font-medium">

@@ -2,6 +2,7 @@ import { CircleCheck, CircleUserRound } from "lucide-react"
 import { Card } from "@/components/ui/card"
 import { Table, TableBody, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { UNASSIGNED, type GroupBy, type TicketGroup } from "@/lib/health/list"
+import type { Resolution } from "@/lib/resolutions/types"
 import { cn } from "@/lib/utils"
 import { SEVERITY_META } from "./severity"
 import { TicketCard } from "./TicketCard"
@@ -12,10 +13,20 @@ type Props = {
   groupBy: GroupBy
   expanded: ReadonlySet<string>
   onToggle: (key: string) => void
+  fixes: Map<string, Resolution[]>
+  onResolve: (key: string) => void
+  onUndo: (key: string) => void
 }
 
 /** The tickets to fix: a table on wide containers, cards on narrow ones, optionally grouped. */
-export function TicketList({ groups, groupBy, expanded, onToggle }: Props) {
+export function TicketList({ groups, groupBy, expanded, onToggle, fixes, onResolve, onUndo }: Props) {
+  const rowProps = (key: string) => ({
+    expanded: expanded.has(key),
+    onToggle: () => onToggle(key),
+    fixes: fixes.get(key),
+    onResolve: () => onResolve(key),
+    onUndo: () => onUndo(key),
+  })
   if (groups.every((g) => g.rows.length === 0)) {
     return (
       <Card className="flex flex-col items-center gap-2 py-16 text-center">
@@ -36,25 +47,25 @@ export function TicketList({ groups, groupBy, expanded, onToggle }: Props) {
                 <TableHeader>
                   <TableRow className="hover:bg-transparent">
                     <TableHead className="w-8" />
-                    <TableHead className="w-[38%]">Ticket</TableHead>
+                    <TableHead className="w-[34%]">Ticket</TableHead>
                     <TableHead className="w-[26%]">Missing fields</TableHead>
                     <TableHead className="w-[22%]">Affects</TableHead>
                     <TableHead>Severity</TableHead>
-                    <TableHead className="w-10">
-                      <span className="sr-only">Open in Jira</span>
+                    <TableHead className="w-32">
+                      <span className="sr-only">Actions</span>
                     </TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {group.rows.map((h) => (
-                    <TicketRow key={h.issue.key} health={h} expanded={expanded.has(h.issue.key)} onToggle={() => onToggle(h.issue.key)} />
+                    <TicketRow key={h.issue.key} health={h} {...rowProps(h.issue.key)} />
                   ))}
                 </TableBody>
               </Table>
             </div>
             <ul className="divide-y @4xl:hidden">
               {group.rows.map((h) => (
-                <TicketCard key={h.issue.key} health={h} expanded={expanded.has(h.issue.key)} onToggle={() => onToggle(h.issue.key)} />
+                <TicketCard key={h.issue.key} health={h} {...rowProps(h.issue.key)} />
               ))}
             </ul>
           </Card>

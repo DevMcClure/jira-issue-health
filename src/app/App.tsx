@@ -2,6 +2,7 @@ import { Toaster } from "@/components/ui/sonner"
 import { TooltipProvider } from "@/components/ui/tooltip"
 import { TicketsToFixPage } from "@/components/TicketsToFixPage"
 import { useData } from "@/hooks/useData"
+import { ResolutionsProvider } from "@/providers/ResolutionsProvider"
 import { AppLayout } from "./AppLayout"
 
 /** One view, no router: the shell around "Tickets to fix". */
@@ -12,7 +13,10 @@ export function App() {
   return (
     <TooltipProvider delayDuration={200}>
       <AppLayout>
-        <TicketsToFixPage key={dataKey} />
+        {/* Resolutions belong to one dataset, identified by when it was trawled. */}
+        <ResolutionsProvider key={dataset.meta.generatedAt} datasetId={dataset.meta.generatedAt}>
+          <TicketsToFixPage key={dataKey} />
+        </ResolutionsProvider>
       </AppLayout>
       <Toaster richColors={false} position="bottom-right" />
     </TooltipProvider>
