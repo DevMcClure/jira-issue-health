@@ -1,0 +1,31 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+*.tsbuildinfo
+.vite/
+
+# Test / coverage
+coverage/
+
+# Logs
+*.log
+
+# Env files (never commit them)
+.env
+.env.*
+!.env.example
+
+# Real Jira exports — keep real company data out of the repo.
+exports/
+*.real.json
+
+# Editors / OS
+.vscode/*
+!.vscode/extensions.json
+.idea/
+.DS_Store
+
+# Claude Code local settings
+.claude/settings.local.json
