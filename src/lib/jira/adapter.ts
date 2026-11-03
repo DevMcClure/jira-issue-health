@@ -3,6 +3,14 @@
  * If the Trawler's output changes, change this file and `schema.ts`; nothing else should need to.
  */
 import { exportSchema, type RawExport, type RawIssue } from "./schema"
+import {
+  isTrawlerLog,
+  isTrawlerShape,
+  normaliseTrawlerInput,
+  parseTrawlerLog,
+  trawlerExportSchema,
+  trawlerToContract,
+} from "./trawler"
 import type { ChangelogEntry, Issue, JiraDataset, Meta, Person, Sprint, Team } from "./types"
 
 export class JiraExportError extends Error {
@@ -32,15 +40,27 @@ const changeValue = (v: string | number | null | undefined): string | null =>
 const problemList = (issues: { path: PropertyKey[]; message: string }[]) =>
   issues.map((i) => `${i.path.length ? i.path.join(".") : "(root)"}: ${i.message}`)
 
-/** Validate and normalise a parsed export. Throws `JiraExportError` listing every problem. */
+/**
+ * Validate and normalise a parsed export: the contract shape, or raw Trawler
+ * output (converted first, as in the Jira Dashboard). Throws `JiraExportError` listing every problem.
+ */
 export function parseExport(raw: unknown): JiraDataset {
+  if (isTrawlerShape(raw)) {
+    const trawler = trawlerExportSchema.safeParse(normaliseTrawlerInput(raw))
+    if (!trawler.success) throw new JiraExportError(problemList(trawler.error.issues))
+    raw = trawlerToContract(trawler.data)
+  }
   const result = exportSchema.safeParse(raw)
   if (!result.success) throw new JiraExportError(problemList(result.error.issues))
   return buildDataset(result.data)
 }
 
-/** File contents in, dataset out. Throws `SyntaxError` for invalid JSON, `JiraExportError` for the wrong shape. */
+/**
+ * File contents in, dataset out: JSON (either shape) or a Trawler audit log.
+ * Throws `SyntaxError` for invalid JSON, `JiraExportError` for the wrong shape.
+ */
 export function parseExportText(text: string): JiraDataset {
+  if (isTrawlerLog(text)) return parseExport(parseTrawlerLog(text))
   return parseExport(JSON.parse(text))
 }
 
@@ -51,6 +71,7 @@ export function jiraIssueUrl(meta: Pick<Meta, "jiraBaseUrl">, key: string): stri
 
 function buildDataset(data: RawExport): JiraDataset {
   const issues = data.issues.map(toIssue)
+  inferEpicsFromParents(issues)
   const people = (data.people ?? []).map((p): Person => ({ id: p.id, displayName: p.displayName }))
   const teams = (data.teams ?? []).map(
     (t): Team => ({
@@ -87,6 +108,20 @@ function buildDataset(data: RawExport): JiraDataset {
     personById: new Map(people.map((p) => [p.id, p])),
     sprintById: new Map(sprints.map((s) => [s.id, s])),
     teamById: new Map(teams.map((t) => [t.id, t])),
+  }
+}
+
+/**
+ * Jira Cloud links a Story, Task or Bug to its epic as its parent, and raw Trawler
+ * output has no `epicKey`. So a non-Sub-task whose parent isn't known to be
+ * something other than an Epic takes that parent as its epic.
+ */
+function inferEpicsFromParents(issues: Issue[]) {
+  const typeOf = new Map(issues.map((i) => [i.key, i.type]))
+  for (const issue of issues) {
+    if (issue.epicKey || !issue.parentKey || issue.type === "Sub-task" || issue.type === "Epic") continue
+    const parentType = typeOf.get(issue.parentKey)
+    if (parentType === undefined || parentType === "Epic") issue.epicKey = issue.parentKey
   }
 }
 

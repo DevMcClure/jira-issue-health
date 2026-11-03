@@ -97,7 +97,7 @@ export const DEFAULT_REQUIRED_FIELDS: readonly RequiredField[] = [
   {
     field: "epicKey",
     label: "Epic",
-    requiredFor: ["Story", "Task", "Bug"],
+    requiredFor: ["Story", "Bug", "Task"],
     whenLabel: "always",
     severity: "warning",
     affects: ["epic-progress", "pi-objectives"],

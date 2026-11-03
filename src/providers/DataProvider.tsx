@@ -47,9 +47,8 @@ export function DataProvider({ children, dataSource = defaultSource }: Props) {
         })
         return { ok: true, dataset: loaded.dataset }
       } catch (err) {
-        const problems = problemsFrom(err)
-        toast.error(`Couldn't load ${file.name}`, { description: summarise(problems) })
-        return { ok: false, problems }
+        // The caller shows every problem; the current data stays as it was.
+        return { ok: false, problems: problemsFrom(err) }
       }
     },
     [dataSource],
