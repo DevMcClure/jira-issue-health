@@ -12,14 +12,46 @@ coverage/
 # Logs
 *.log
 
-# Env files (never commit them)
+# --- Secrets: never commit any ------------------------------------------
+# Env files (only the placeholder template is committed)
 .env
 .env.*
 !.env.example
+# Keys, certificates and keystores
+*.pem
+*.key
+*.p12
+*.pfx
+*.crt
+*.cer
+*.der
+*.jks
+*.keystore
+id_rsa*
+id_ed25519*
+id_ecdsa*
+# Credential and token files
+secrets/
+*.secret
+*.secrets
+credentials*.json
+*credentials*
+service-account*.json
+*.token
+.npmrc
+.netrc
+.htpasswd
 
-# Real Jira exports — keep real company data out of the repo.
+# Real Jira exports: keep real company data out of the repo.
+# Only the generated mock export is committed.
 exports/
 *.real.json
+
+# --- Docs stay local ----------------------------------------------------
+# The only committed doc is the root README.
+docs/
+*.md
+!/README.md
 
 # Editors / OS
 .vscode/*
