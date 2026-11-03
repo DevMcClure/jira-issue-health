@@ -10,6 +10,11 @@ export default defineConfig(({ mode }) => {
     // GitHub Pages serves the site from /<repo>/; CI sets VITE_BASE_PATH. Locally it's "/".
     base: env.VITE_BASE_PATH || '/',
     plugins: [react(), tailwindcss()],
+    build: {
+      // The mock export loads as its own chunk. The entry is still ~520 KB (React, Radix, zod),
+      // all needed before the first render, hence the raised limit (the Jira Dashboard uses 800).
+      chunkSizeWarningLimit: 600,
+    },
     resolve: {
       alias: {
         '@': path.resolve(import.meta.dirname, './src'),

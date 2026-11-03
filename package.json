@@ -10,7 +10,8 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "mock": "tsx scripts/generate-mock.ts"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.3.3",
