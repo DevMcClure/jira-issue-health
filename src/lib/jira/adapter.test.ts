@@ -13,7 +13,7 @@ function exportWith(issue: Record<string, unknown> = {}, rest: Record<string, un
       {
         key: "WEB-1",
         summary: "Do the thing",
-        type: "Story",
+        type: "flow-value",
         status: "In Progress",
         statusCategory: "indeterminate",
         priority: "Medium",
@@ -117,8 +117,8 @@ describe("missing values", () => {
     expect(parseExport(exportWith({ labels: ["risk", " ", ""] })).issues[0].labels).toEqual(["risk"])
   })
 
-  it("defaults a missing type to Task", () => {
-    expect(parseExport(exportWith({ type: null })).issues[0].type).toBe("Task")
+  it("calls a missing type Unknown", () => {
+    expect(parseExport(exportWith({ type: null })).issues[0].type).toBe("Unknown")
   })
 })
 

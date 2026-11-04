@@ -39,39 +39,39 @@ function memoryStorage() {
 }
 
 describe("resolving tickets (overlay)", () => {
-  // WEB-880 is missing story points, assignee and epic.
+  // WEB-877 is missing story points, assignee and epic.
   it("removes a ticket from the list once every gap is resolved", () => {
-    expect(listed([])).toContain("WEB-880")
-    const all = resolution("WEB-880", { storyPoints: 3, assigneeId: "u-07", epicKey: "WEB-805" })
-    expect(gapsOf("WEB-880", [all])).toEqual([])
-    expect(listed([all])).not.toContain("WEB-880")
+    expect(listed([])).toContain("WEB-877")
+    const all = resolution("WEB-877", { storyPoints: 3, assigneeId: "u-07", epicKey: "WEB-805" })
+    expect(gapsOf("WEB-877", [all])).toEqual([])
+    expect(listed([all])).not.toContain("WEB-877")
   })
 
   it("keeps a partly resolved ticket with its remaining gaps", () => {
-    const some = resolution("WEB-880", { storyPoints: 3 })
-    expect(gapsOf("WEB-880", [some])).toEqual(["assigneeId", "epicKey"])
-    expect(listed([some])).toContain("WEB-880")
+    const some = resolution("WEB-877", { storyPoints: 3 })
+    expect(gapsOf("WEB-877", [some])).toEqual(["assigneeId", "epicKey"])
+    expect(listed([some])).toContain("WEB-877")
   })
 
   it("lets later saves add to earlier ones", () => {
-    const first = resolution("WEB-880", { storyPoints: 3, epicKey: "WEB-700" })
-    const second = resolution("WEB-880", { assigneeId: "u-07", epicKey: "WEB-805" }, "2026-11-03T10:00:00Z")
+    const first = resolution("WEB-877", { storyPoints: 3, epicKey: "WEB-700" })
+    const second = resolution("WEB-877", { assigneeId: "u-07", epicKey: "WEB-805" }, "2026-11-03T10:00:00Z")
     expect(mergedValues([first, second])).toEqual({ storyPoints: 3, epicKey: "WEB-805", assigneeId: "u-07" })
-    expect(listed([first, second])).not.toContain("WEB-880")
+    expect(listed([first, second])).not.toContain("WEB-877")
   })
 
   it("restores the ticket when the resolution is undone", () => {
-    const all = resolution("WEB-880", { storyPoints: 3, assigneeId: "u-07", epicKey: "WEB-805" })
+    const all = resolution("WEB-877", { storyPoints: 3, assigneeId: "u-07", epicKey: "WEB-805" })
     const afterUndo: Resolution[] = [all].filter((r) => r !== all)
-    expect(listed(afterUndo)).toContain("WEB-880")
+    expect(listed(afterUndo)).toContain("WEB-877")
   })
 
   it("never changes the original data", () => {
     const before = JSON.stringify(dataset.issues)
-    const overlaid = applyResolutions(dataset, [resolution("WEB-880", { storyPoints: 3 })])
+    const overlaid = applyResolutions(dataset, [resolution("WEB-877", { storyPoints: 3 })])
     expect(JSON.stringify(dataset.issues)).toBe(before)
-    expect(dataset.byKey.get("WEB-880")!.storyPoints).toBeNull()
-    expect(overlaid.byKey.get("WEB-880")!.storyPoints).toBe(3)
+    expect(dataset.byKey.get("WEB-877")!.storyPoints).toBeNull()
+    expect(overlaid.byKey.get("WEB-877")!.storyPoints).toBe(3)
   })
 
   it("ignores resolutions for tickets that aren't in this dataset", () => {
@@ -82,7 +82,7 @@ describe("resolving tickets (overlay)", () => {
 
 describe("local resolution sink", () => {
   const generatedAt = "2026-11-03T08:15:00Z"
-  const r = resolution("WEB-880", { storyPoints: 3 })
+  const r = resolution("WEB-877", { storyPoints: 3 })
 
   it("keeps resolutions across a refresh (a new sink on the same storage)", () => {
     const storage = memoryStorage()

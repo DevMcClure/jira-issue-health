@@ -106,7 +106,7 @@ describe("inScope", () => {
 
   it("filters by type and searches key or summary", () => {
     const issue = makeIssue({ key: "WEB-42", summary: "Search: add filters", sprintIds: [2] })
-    expect(inScope(issue, filters({ types: ["Bug"] }), dataset)).toBe(false)
+    expect(inScope(issue, filters({ types: ["flow-defect"] }), dataset)).toBe(false)
     expect(inScope(issue, filters({ search: "web-4" }), dataset)).toBe(true)
     expect(inScope(issue, filters({ search: "  ADD FILTERS " }), dataset)).toBe(true)
     expect(inScope(issue, filters({ search: "billing" }), dataset)).toBe(false)

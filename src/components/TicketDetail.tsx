@@ -18,7 +18,7 @@ export function TicketDetail({ health }: { health: TicketHealth }) {
   return (
     <div className="grid gap-6 py-2 @3xl:grid-cols-[minmax(14rem,1fr)_2fr]">
       <section aria-label={`Required fields for ${issue.key}`}>
-        <h3 className="mb-2 text-xs font-medium text-muted-foreground">Required for a {issue.type}</h3>
+        <h3 className="mb-2 text-xs font-medium text-muted-foreground">Required for {/^[aeiou]/i.test(issue.type) ? "an" : "a"} {issue.type}</h3>
         <ul className="space-y-1.5 text-sm">
           {fields.map((f) => {
             const gap = gaps.find((g) => g.field === f.field)

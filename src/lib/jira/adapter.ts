@@ -112,7 +112,7 @@ function buildDataset(data: RawExport): JiraDataset {
 }
 
 /**
- * Jira Cloud links a Story, Task or Bug to its epic as its parent, and raw Trawler
+ * Jira Cloud links a ticket to its epic as its parent, and raw Trawler
  * output has no `epicKey`. So a non-Sub-task whose parent isn't known to be
  * something other than an Epic takes that parent as its epic.
  */
@@ -141,7 +141,7 @@ function toIssue(r: RawIssue): Issue {
   return {
     key: r.key,
     summary: r.summary,
-    type: presentString(r.type) ?? "Task",
+    type: presentString(r.type) ?? "Unknown",
     status: r.status,
     statusCategory: r.statusCategory,
     priority: presentString(r.priority),

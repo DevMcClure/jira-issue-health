@@ -24,13 +24,13 @@ function input(resolutions: Resolution[], filters = DEFAULT_FILTERS) {
 
 describe("show resolved", () => {
   const fixes = [
-    r("WEB-880", { storyPoints: 3, assigneeId: "u-07", epicKey: "WEB-805" }), // all three gaps
+    r("WEB-877", { storyPoints: 3, assigneeId: "u-07", epicKey: "WEB-805" }), // all three gaps
     r("PLAT-1290", { storyPoints: 2 }), // one of two
   ]
 
   it("brings back fully resolved tickets, without gaps", () => {
     const rows = resolvedRows(input(fixes))
-    expect(rows.map((h) => h.issue.key)).toEqual(["WEB-880"])
+    expect(rows.map((h) => h.issue.key)).toEqual(["WEB-877"])
     expect(rows[0].gaps).toEqual([])
     expect(rows[0].issue.storyPoints).toBe(3)
   })

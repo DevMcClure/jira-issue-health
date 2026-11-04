@@ -21,10 +21,16 @@ type Case = {
 const CASES: Case[] = [
   {
     field: "storyPoints",
-    present: [makeIssue(), makeIssue({ type: "Bug" }), makeIssue({ storyPoints: 0 })],
-    missing: [makeIssue({ storyPoints: null }), makeIssue({ type: "Bug", storyPoints: null }), todo({ storyPoints: null })],
+    present: [makeIssue(), makeIssue({ type: "flow-defect" }), makeIssue({ storyPoints: 0 })],
+    missing: [
+      makeIssue({ storyPoints: null }),
+      makeIssue({ type: "flow-quality", storyPoints: null }),
+      makeIssue({ type: "flow-accelerator", storyPoints: null }),
+      makeIssue({ type: "flow-defect", storyPoints: null }),
+      todo({ storyPoints: null }),
+    ],
     notRequired: [makeIssue({ storyPoints: null, sprintIds: [] })],
-    wrongType: [makeIssue({ type: "Task", storyPoints: null }), makeIssue({ type: "Spike", storyPoints: null })],
+    wrongType: [makeIssue({ type: "Spike", storyPoints: null }), makeIssue({ type: "Sub-task", storyPoints: null })],
   },
   {
     field: "assigneeId",
@@ -49,35 +55,36 @@ const CASES: Case[] = [
   },
   {
     field: "sprintIds",
-    present: [makeIssue(), makeIssue({ type: "Task" })],
-    missing: [makeIssue({ sprintIds: [] }), makeIssue({ type: "Bug", sprintIds: [] })],
+    present: [makeIssue(), makeIssue({ type: "flow-quality" })],
+    missing: [makeIssue({ sprintIds: [] }), makeIssue({ type: "flow-defect", sprintIds: [] }), makeIssue({ type: "flow-accelerator", sprintIds: [] })],
     notRequired: [todo({ sprintIds: [] }), done({ sprintIds: [] })],
     wrongType: [makeIssue({ type: "Spike", sprintIds: [] }), makeIssue({ type: "Epic", sprintIds: [] })],
   },
   {
     field: "epicKey",
-    present: [makeIssue(), makeIssue({ type: "Task" })],
-    missing: [makeIssue({ epicKey: null }), todo({ type: "Bug", epicKey: null }), done({ type: "Task", epicKey: null })],
+    present: [makeIssue(), makeIssue({ type: "flow-quality" })],
+    missing: [makeIssue({ epicKey: null }), todo({ type: "flow-defect", epicKey: null }), done({ type: "flow-defect", epicKey: null })],
     notRequired: [],
     wrongType: [makeIssue({ type: "Spike", epicKey: null }), makeIssue({ type: "Epic", epicKey: null })],
   },
   {
     field: "priority",
     present: [makeIssue(), makeIssue({ type: "Spike" })],
-    missing: [makeIssue({ priority: null }), todo({ type: "Task", priority: null })],
+    missing: [makeIssue({ priority: null }), todo({ type: "flow-accelerator", priority: null })],
     notRequired: [],
     wrongType: [makeIssue({ type: "Epic", priority: null }), makeIssue({ type: "Sub-task", priority: null })],
   },
   {
     field: "labels",
     present: [
-      makeIssue({ type: "Task", labels: ["tech-debt"] }),
+      makeIssue({ type: "Spike", labels: ["tech-debt"] }),
       makeIssue({ type: "Spike", labels: ["search", "risk"] }),
-      makeIssue({ type: "Task", labels: ["Tech-Debt"] }),
+      makeIssue({ type: "Spike", labels: ["Tech-Debt"] }),
     ],
-    missing: [makeIssue({ type: "Task", labels: [] }), makeIssue({ type: "Spike", labels: ["search"] })],
+    missing: [makeIssue({ type: "Spike", labels: [] }), makeIssue({ type: "Spike", labels: ["search"] })],
     notRequired: [],
-    wrongType: [makeIssue({ type: "Story", labels: [] }), makeIssue({ type: "Bug", labels: [] })],
+    // Flow types are classified by their type, so they don't need the label.
+    wrongType: [makeIssue({ labels: [] }), makeIssue({ type: "flow-quality", labels: [] }), makeIssue({ type: "flow-defect", labels: [] })],
   },
 ]
 
@@ -99,6 +106,14 @@ describe("default required fields", () => {
       })
     }
     it.each(wrongType)("doesn't apply to other types: %#", (issue) => expect(stateOf(field, issue)).toBeUndefined())
+  })
+
+  it("only knows the current issue types", () => {
+    const types = new Set(DEFAULT_REQUIRED_FIELDS.flatMap((r) => r.requiredFor))
+    expect(types.has("Story" as never)).toBe(false)
+    expect(types.has("Task" as never)).toBe(false)
+    expect(types.has("Bug" as never)).toBe(false)
+    for (const t of ["flow-value", "flow-quality", "flow-defect", "flow-accelerator"] as const) expect(types.has(t)).toBe(true)
   })
 
   it("matches the brief's severities", () => {

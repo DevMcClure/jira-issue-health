@@ -34,7 +34,7 @@ describe("fix list", () => {
     expect(lines[0]).toBe("## WEB 26.4.4: tickets to update (trawled 3 Nov 08:15)")
     expect(lines[1]).toMatch(/^\d+ tickets · \d+ critical$/)
     expect(lines[3]).toBe("### Unassigned")
-    expect(text).toContain("- [WEB-880](https://jira.example.com/browse/WEB-880) Story points, Assignee, Epic missing → ")
+    expect(text).toContain("- [WEB-877](https://jira.example.com/browse/WEB-877) Story points, Assignee, Epic missing → ")
     expect(text).toMatch(/### [A-Z][a-z]+ [A-Z]\.\n/)
   })
 

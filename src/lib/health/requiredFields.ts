@@ -32,12 +32,14 @@ export interface RequiredField {
   isPresent?: (issue: Issue) => boolean
 }
 
-/** Labels that classify a Task or Spike in the Jira Dashboard's flow distribution. */
+/** Labels that classify a Spike in the Jira Dashboard's flow distribution (flow-* types are classified by type). */
 export const FLOW_LABELS = ["tech-debt", "risk"] as const
 
 /** Open question default: Sub-tasks are only checked for a missing assignee. */
-const ALL_BUT_SUBTASK: IssueType[] = ["Story", "Bug", "Task", "Spike", "Epic"]
-const WORK_ITEMS: IssueType[] = ["Story", "Bug", "Task", "Spike"]
+/** The flow item types: the estimated, sprint-planned work. (flow-defect replaces Bug.) */
+const DELIVERY: IssueType[] = ["flow-value", "flow-quality", "flow-defect", "flow-accelerator"]
+const WORK_ITEMS: IssueType[] = [...DELIVERY, "Spike"]
+const ALL_BUT_SUBTASK: IssueType[] = [...WORK_ITEMS, "Epic"]
 
 const inASprint = (i: Issue) => i.sprintIds.length > 0
 const startedOrDone = (i: Issue) => i.statusCategory === "inProgress" || i.statusCategory === "done"
@@ -48,7 +50,7 @@ export const DEFAULT_REQUIRED_FIELDS: readonly RequiredField[] = [
   {
     field: "storyPoints",
     label: "Story points",
-    requiredFor: ["Story", "Bug"],
+    requiredFor: DELIVERY,
     when: inASprint,
     whenLabel: "only when in a sprint",
     severity: "critical",
@@ -87,7 +89,7 @@ export const DEFAULT_REQUIRED_FIELDS: readonly RequiredField[] = [
   {
     field: "sprintIds",
     label: "Sprint",
-    requiredFor: ["Story", "Bug", "Task"],
+    requiredFor: DELIVERY,
     when: inProgress,
     whenLabel: "only when In Progress",
     severity: "warning",
@@ -97,7 +99,7 @@ export const DEFAULT_REQUIRED_FIELDS: readonly RequiredField[] = [
   {
     field: "epicKey",
     label: "Epic",
-    requiredFor: ["Story", "Bug", "Task"],
+    requiredFor: DELIVERY,
     whenLabel: "always",
     severity: "warning",
     affects: ["epic-progress", "pi-objectives"],
@@ -115,11 +117,11 @@ export const DEFAULT_REQUIRED_FIELDS: readonly RequiredField[] = [
   {
     field: "labels",
     label: "Labels",
-    requiredFor: ["Task", "Spike"],
+    requiredFor: ["Spike"],
     whenLabel: "always (needs tech-debt or risk)",
     severity: "info",
     affects: ["flow-distribution"],
-    why: "Tasks and Spikes need a tech-debt or risk label, or flow distribution files them as Other.",
+    why: "Spikes need a tech-debt or risk label, or flow distribution files them as Other.",
     isPresent: (i) => i.labels.some((l) => (FLOW_LABELS as readonly string[]).includes(l.toLowerCase())),
   },
 ]

@@ -74,7 +74,9 @@ export function jaccard(a: Set<string>, b: Set<string>): number {
   return shared / (a.size + b.size - shared)
 }
 
-const plural = (type: string, n: number) => (n === 1 ? type : type.endsWith("y") ? `${type.slice(0, -1)}ies` : `${type}s`)
+/** "Bugs", "Spikes", "Sub-tasks"; types like "flow-value" read better as "flow-value tickets". */
+const plural = (type: string, n: number) =>
+  /^[A-Z][a-z-]+$/.test(type) ? (n === 1 ? type : `${type}s`) : `${type} ${n === 1 ? "ticket" : "tickets"}`
 
 /**
  * Similar tickets that pass `has` (usually: the field is filled in), from the first tier with

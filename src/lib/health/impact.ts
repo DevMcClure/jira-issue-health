@@ -79,7 +79,7 @@ export const DASHBOARD_VIEWS: Record<DashboardViewId, DashboardView> = {
     id: "flow-distribution",
     label: "Flow distribution",
     page: "Flow",
-    uses: "Splits work into features, defects, risk and debt; Tasks and Spikes need a tech-debt or risk label.",
+    uses: "Splits work by flow type (value, quality, defect, accelerator); Spikes need a tech-debt or risk label.",
   },
   load: {
     id: "load",

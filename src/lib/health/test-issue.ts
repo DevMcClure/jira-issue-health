@@ -5,7 +5,7 @@ export function makeIssue(overrides: Partial<Issue> = {}): Issue {
   return {
     key: "WEB-1",
     summary: "Search: add filters to the list view",
-    type: "Story",
+    type: "flow-value",
     status: "In Progress",
     statusCategory: "inProgress",
     priority: "Medium",

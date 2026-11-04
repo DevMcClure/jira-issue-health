@@ -14,7 +14,7 @@ import {
 import { makeIssue } from "./test-issue"
 
 let n = 100
-/** Another Web Story with a fresh key, unrelated by epic, label and summary unless overridden. */
+/** Another Web flow-value ticket with a fresh key, unrelated by epic, label and summary unless overridden. */
 const other = (overrides: Partial<Issue> = {}) =>
   makeIssue({ key: `WEB-${n++}`, epicKey: "WEB-OTHER", labels: ["misc"], summary: `Unrelated work item ${n}`, ...overrides })
 
@@ -59,13 +59,13 @@ describe("similarTickets", () => {
     const found = similarTickets(target, ctx([target, ...epicMates, other(), other(), other()]), hasPoints)
     expect(found?.tier).toBe(1)
     expect(found?.matches).toEqual(epicMates)
-    expect(found?.source).toBe("Stories in WEB-0")
+    expect(found?.source).toBe("flow-value tickets in WEB-0")
   })
 
   it("tier 1 ignores other types, the ticket itself and tickets without the field", () => {
     const issues = [
       target,
-      other({ epicKey: "WEB-0", type: "Bug" }),
+      other({ epicKey: "WEB-0", type: "flow-defect" }),
       other({ epicKey: "WEB-0", storyPoints: null }),
       other({ epicKey: "WEB-0" }),
       other({ epicKey: "WEB-0" }),
@@ -79,7 +79,7 @@ describe("similarTickets", () => {
     const found = similarTickets(target, ctx(issues), hasPoints)
     expect(found?.tier).toBe(2)
     expect(found?.matches).toEqual(labelled)
-    expect(found?.source).toBe("Stories in Web labelled search")
+    expect(found?.source).toBe("flow-value tickets in Web labelled search")
   })
 
   it("tier 3: same team and type, similar summary", () => {
@@ -98,7 +98,7 @@ describe("similarTickets", () => {
     const found = similarTickets(target, ctx([target, ...team, other({ key: "MOB-2", teamId: "TEAM-MOB" })]), hasPoints)
     expect(found?.tier).toBe(4)
     expect(found?.matches).toEqual(team)
-    expect(found?.source).toBe("Stories in Web")
+    expect(found?.source).toBe("flow-value tickets in Web")
   })
 
   it("stops at the first tier with at least 3 matches", () => {
@@ -122,7 +122,7 @@ describe("suggest", () => {
     const issues = [target, ...[2, 5, 3, 3].map((p) => other({ epicKey: "WEB-0", storyPoints: p }))]
     const s = suggest(target, "storyPoints", ctx(issues))
     expect(s).toMatchObject({ field: "storyPoints", value: 3, tier: 1 })
-    expect(s?.evidence).toBe("4 similar Stories in WEB-0 have 2–5 pts, median 3.")
+    expect(s?.evidence).toBe("4 similar flow-value tickets in WEB-0 have 2–5 pts, median 3.")
   })
 
   it("story points: an even count takes the lower middle, so it's a value someone used", () => {
@@ -132,7 +132,7 @@ describe("suggest", () => {
 
   it("story points: says so when they all agree", () => {
     const issues = [target, ...[3, 3, 3].map((p) => other({ epicKey: "WEB-0", storyPoints: p }))]
-    expect(suggest(target, "storyPoints", ctx(issues))?.evidence).toBe("3 similar Stories in WEB-0 have all 3 pts.")
+    expect(suggest(target, "storyPoints", ctx(issues))?.evidence).toBe("3 similar flow-value tickets in WEB-0 have all 3 pts.")
   })
 
   it("epic: the most common epic among similar tickets", () => {
@@ -141,7 +141,7 @@ describe("suggest", () => {
     const issues = [noEpic, epic, other({ labels: ["search"], epicKey: "WEB-700" }), other({ labels: ["search"], epicKey: "WEB-700" }), other({ labels: ["search"], epicKey: "WEB-9" })]
     const s = suggest(noEpic, "epicKey", ctx(issues))
     expect(s).toMatchObject({ value: "WEB-700", tier: 2 })
-    expect(s?.evidence).toBe("2 of 3 similar Stories in Web labelled search are in WEB-700 (Global search).")
+    expect(s?.evidence).toBe("2 of 3 similar flow-value tickets in Web labelled search are in WEB-700 (Global search).")
     expect(s?.basedOn).toHaveLength(2)
   })
 
@@ -150,27 +150,27 @@ describe("suggest", () => {
     const issues = [issue, ...["High", "Medium", "High", "Medium"].map((p) => other({ epicKey: "WEB-0", priority: p }))]
     const s = suggest(issue, "priority", ctx(issues))
     expect(s?.value).toBe("High")
-    expect(s?.evidence).toBe("2 of 4 similar Stories in WEB-0 are High priority.")
+    expect(s?.evidence).toBe("2 of 4 similar flow-value tickets in WEB-0 are High priority.")
   })
 
-  it("labels: adds the flow label similar Tasks use, keeping the ticket's own", () => {
-    const task = makeIssue({ key: "WEB-1", type: "Task", labels: ["search"], epicKey: "WEB-0" })
+  it("labels: adds the flow label similar Spikes use, keeping the ticket's own", () => {
+    const task = makeIssue({ key: "WEB-1", type: "Spike", labels: ["search"], epicKey: "WEB-0" })
     const issues = [
       task,
-      other({ type: "Task", epicKey: "WEB-0", labels: ["search", "tech-debt"] }),
-      other({ type: "Task", epicKey: "WEB-0", labels: ["Tech-Debt"] }),
-      other({ type: "Task", epicKey: "WEB-0", labels: ["risk"] }),
-      other({ type: "Task", epicKey: "WEB-0", labels: ["search"] }),
+      other({ type: "Spike", epicKey: "WEB-0", labels: ["search", "tech-debt"] }),
+      other({ type: "Spike", epicKey: "WEB-0", labels: ["Tech-Debt"] }),
+      other({ type: "Spike", epicKey: "WEB-0", labels: ["risk"] }),
+      other({ type: "Spike", epicKey: "WEB-0", labels: ["search"] }),
     ]
     const s = suggest(task, "labels", ctx(issues))
     expect(s).toMatchObject({ value: ["search", "tech-debt"], added: "tech-debt", tier: 1 })
-    expect(s?.evidence).toBe("2 of 3 similar Tasks in WEB-0 are labelled tech-debt.")
+    expect(s?.evidence).toBe("2 of 3 similar Spikes in WEB-0 are labelled tech-debt.")
   })
 
   it("assignee: up to three people most active on the same epic", () => {
     const issue = makeIssue({ key: "WEB-1", assigneeId: null, epicKey: "WEB-0" })
     const people = ["u-2", "u-1", "u-2", "u-3", "u-4", "u-3", "u-2"]
-    const issues = [issue, makeIssue({ key: "WEB-0", type: "Epic", summary: "Search", epicKey: null, assigneeId: null }), ...people.map((p) => other({ epicKey: "WEB-0", assigneeId: p, type: "Bug" }))]
+    const issues = [issue, makeIssue({ key: "WEB-0", type: "Epic", summary: "Search", epicKey: null, assigneeId: null }), ...people.map((p) => other({ epicKey: "WEB-0", assigneeId: p, type: "flow-defect" }))]
     const s = suggest(issue, "assigneeId", ctx(issues))
     expect(s).toMatchObject({ value: "u-2", alternatives: ["u-3", "u-4"] })
     expect(s?.evidence).toBe("Most active on WEB-0 (Search): Sam Roe (3 tickets), Kim Lee (2 tickets), Ali Khan (1 ticket).")
@@ -213,7 +213,7 @@ describe("on the mock export", () => {
     return { total: these.length, suggested: withSuggestion.length, without: these.filter((g) => !withSuggestion.includes(g)).map((g) => g.issue.key) }
   }
 
-  it("suggests most story points, epics and priorities, but not for Platform's lone bugs", () => {
+  it("suggests most story points, epics and priorities, but not for Platform's lone flow-defects", () => {
     const points = coverage("storyPoints")
     const epics = coverage("epicKey")
     const priorities = coverage("priority")
@@ -224,7 +224,7 @@ describe("on the mock export", () => {
   })
 
   it("matches the brief's example wording for story points", () => {
-    const issue = dataset.issues.find((i) => i.key === "MOB-558")!
-    expect(suggest(issue, "storyPoints", dataset)?.evidence).toMatch(/^\d+ similar Stories in MOB-\d+ have \d–\d pts, median \d\.$/)
+    const issue = dataset.issues.find((i) => i.key === "WEB-880")!
+    expect(suggest(issue, "storyPoints", dataset)?.evidence).toMatch(/^\d+ similar flow-value tickets in WEB-\d+ have \d–\d pts, median \d\.$/)
   })
 })

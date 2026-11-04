@@ -10,7 +10,7 @@ const ticket = (over: Record<string, unknown> = {}) => ({
   self: "https://jira.example.com/rest/api/2/issue/10001",
   project: "PLAT",
   summary: "Retry failed webhooks",
-  issuetype: "Story",
+  issuetype: "flow-value",
   status: "In Progress",
   statusCategory: "In Progress",
   priority: "High",
@@ -70,7 +70,7 @@ describe("Trawler audit log", () => {
     expect(ds.issues.map((i) => i.key)).toEqual(["PLAT-1", "PLAT-2"])
     const [a, b] = ds.issues
     expect(a).toMatchObject({
-      type: "Story",
+      type: "flow-value",
       statusCategory: "inProgress",
       assigneeId: "JIRAUSER1",
       teamId: "PLAT",
@@ -198,7 +198,7 @@ describe("Trawler JSON output", () => {
 })
 
 describe("epics from parents", () => {
-  it("takes a Story's parent as its epic", () => {
+  it("takes a ticket's parent as its epic", () => {
     const ds = parseExport([ticket({ parent: "PLAT-100" })])
     expect(ds.issues[0].epicKey).toBe("PLAT-100")
   })
@@ -206,9 +206,9 @@ describe("epics from parents", () => {
   it("only when the parent is an Epic or not in the file", () => {
     const ds = parseExport([
       ticket({ key: "PLAT-100", issuetype: "Epic" }),
-      ticket({ key: "PLAT-5", issuetype: "Story", parent: "PLAT-1" }),
-      ticket({ key: "PLAT-1", issuetype: "Story" }),
-      ticket({ key: "PLAT-6", issuetype: "Task", parent: "PLAT-100" }),
+      ticket({ key: "PLAT-5", issuetype: "flow-value", parent: "PLAT-1" }),
+      ticket({ key: "PLAT-1", issuetype: "flow-value" }),
+      ticket({ key: "PLAT-6", issuetype: "flow-quality", parent: "PLAT-100" }),
       ticket({ key: "PLAT-7", issuetype: "Sub-task", parent: "PLAT-1" }),
     ])
     expect(Object.fromEntries(ds.issues.map((i) => [i.key, i.epicKey]))).toEqual({

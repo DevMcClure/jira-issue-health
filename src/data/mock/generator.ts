@@ -23,7 +23,7 @@ type Change = { at: string; authorId: string | null; field: string; from: string
 type MockIssue = {
   key: string
   summary: string
-  type: "Story" | "Bug" | "Task" | "Spike" | "Epic" | "Sub-task"
+  type: "flow-value" | "flow-defect" | "flow-quality" | "flow-accelerator" | "Spike" | "Epic" | "Sub-task"
   status: string
   statusCategory: "new" | "indeterminate" | "done"
   priority: string | null
@@ -115,10 +115,10 @@ type TeamDef = {
   doneEpics: EpicDef[]
   /** PI 26.4 epics, in progress. */
   epics: EpicDef[]
-  /** Relative weights of Story, Bug, Task, Spike. */
-  typeWeights: [number, number, number, number]
-  /** Exact Story, Bug, Task, Spike counts in the active sprint (18 in all), so the gap plan always has candidates. */
-  activeMix: [number, number, number, number]
+  /** Relative weights of flow-value, flow-defect, flow-quality, flow-accelerator, Spike. */
+  typeWeights: [number, number, number, number, number]
+  /** Exact counts of the same types in the active sprint (18 in all), so the gap plan always has candidates. */
+  activeMix: [number, number, number, number, number]
 }
 
 const TEAMS: TeamDef[] = [
@@ -139,9 +139,9 @@ const TEAMS: TeamDef[] = [
       { key: "PLAT-1142", name: "Audit logging", topic: "Audit log", label: "observability" },
       { key: "PLAT-1160", name: "Tenant data export", topic: "Data export", label: "api" },
     ],
-    // Platform's bugs are rare: the only two are hand-written below, so they get no suggestions.
-    typeWeights: [60, 0, 28, 12],
-    activeMix: [11, 0, 5, 2],
+    // Platform's defects are rare: the only ones are hand-written below, so they get no suggestions.
+    typeWeights: [60, 0, 16, 12, 12],
+    activeMix: [11, 0, 3, 2, 2],
   },
   {
     id: "TEAM-WEB",
@@ -160,8 +160,8 @@ const TEAMS: TeamDef[] = [
       { key: "WEB-790", name: "Global search", topic: "Search", label: "search" },
       { key: "WEB-805", name: "Dashboard sharing", topic: "Sharing", label: "dashboard" },
     ],
-    typeWeights: [55, 22, 16, 7],
-    activeMix: [9, 4, 3, 2],
+    typeWeights: [55, 22, 9, 7, 7],
+    activeMix: [9, 4, 2, 1, 2],
   },
   {
     id: "TEAM-MOB",
@@ -180,8 +180,8 @@ const TEAMS: TeamDef[] = [
       { key: "MOB-466", name: "Release 4.2", topic: "Release 4.2", label: "release" },
       { key: "MOB-480", name: "Accessibility pass", topic: "Accessibility", label: "a11y" },
     ],
-    typeWeights: [55, 20, 18, 7],
-    activeMix: [9, 4, 3, 2],
+    typeWeights: [55, 20, 10, 8, 7],
+    activeMix: [9, 4, 2, 1, 2],
   },
 ]
 
@@ -206,8 +206,8 @@ const ACTIVE_STATUSES = [
   ...Array(3).fill("To Do"),
 ] as string[]
 
-const SUMMARY_ACTIONS: Record<"Story" | "Bug" | "Task" | "Spike" | "Sub-task", string[]> = {
-  Story: [
+const SUMMARY_ACTIONS: Record<Exclude<MockIssue["type"], "Epic">, string[]> = {
+  "flow-value": [
     "show status in settings",
     "let admins configure defaults",
     "expose it in the public API",
@@ -221,7 +221,7 @@ const SUMMARY_ACTIONS: Record<"Story" | "Bug" | "Task" | "Spike" | "Sub-task", s
     "add onboarding hints",
     "remember the last choice",
   ],
-  Bug: [
+  "flow-defect": [
     "500 error when the list is empty",
     "wrong time zone in timestamps",
     "duplicate entries after retry",
@@ -231,7 +231,7 @@ const SUMMARY_ACTIONS: Record<"Story" | "Bug" | "Task" | "Spike" | "Sub-task", s
     "crash when the session expires",
     "counter shows stale totals",
   ],
-  Task: [
+  "flow-quality": [
     "add integration tests",
     "write the data migration",
     "update the runbook",
@@ -239,6 +239,13 @@ const SUMMARY_ACTIONS: Record<"Story" | "Bug" | "Task" | "Spike" | "Sub-task", s
     "upgrade the client library",
     "add dashboards and alerts",
     "clean up unused endpoints",
+  ],
+  "flow-accelerator": [
+    "automate the release checklist",
+    "speed up CI builds",
+    "add deploy previews",
+    "script environment setup",
+    "cache test fixtures",
   ],
   Spike: [
     "investigate vendor options",
@@ -281,23 +288,24 @@ export function generateMockExport(seed = 42): RawExportInput {
 
   const priorityFor = (type: MockIssue["type"]) =>
     weighted(
-      type === "Bug"
+      type === "flow-defect"
         ? [["Highest", 15], ["High", 40], ["Medium", 35], ["Low", 10]]
         : [["Highest", 5], ["High", 20], ["Medium", 55], ["Low", 20]],
     )
 
   const pointsFor = (type: MockIssue["type"]): number | null => {
-    if (type === "Story") return weighted([[1, 10], [2, 20], [3, 30], [5, 25], [8, 15]])
-    if (type === "Bug") return weighted([[1, 30], [2, 35], [3, 25], [5, 10]])
-    if (type === "Task" || type === "Spike") return chance(0.5) ? pick([1, 2, 3]) : null
+    if (type === "flow-value") return weighted([[1, 10], [2, 20], [3, 30], [5, 25], [8, 15]])
+    if (type === "flow-defect") return weighted([[1, 30], [2, 35], [3, 25], [5, 10]])
+    if (type === "flow-quality" || type === "flow-accelerator") return weighted([[1, 20], [2, 35], [3, 30], [5, 15]])
+    if (type === "Spike") return chance(0.5) ? pick([1, 2, 3]) : null
     return null
   }
 
   const labelsFor = (type: MockIssue["type"], epic: EpicDef | null): string[] => {
     const area = epic ? [epic.label] : []
-    if (type === "Task") return [...area, chance(0.7) ? "tech-debt" : "risk"]
+    // Flow types are classified by type; only Spikes need a tech-debt or risk label.
     if (type === "Spike") return [...area, chance(0.7) ? "risk" : "tech-debt"]
-    if (type === "Story" || type === "Bug") return area
+    if (type !== "Sub-task" && type !== "Epic") return area
     return []
   }
 
@@ -397,7 +405,7 @@ export function generateMockExport(seed = 42): RawExportInput {
       issues.push(issue)
     }
 
-    const types = ["Story", "Bug", "Task", "Spike"] as const
+    const types = ["flow-value", "flow-defect", "flow-quality", "flow-accelerator", "Spike"] as const
     const pickType = () => weighted(types.map((t, i) => [t, team.typeWeights[i]] as const))
     const epicFor = (type: MockIssue["type"], sprintIdx: number | null): EpicDef | null => {
       if (type === "Spike" && chance(0.5)) return null
@@ -470,7 +478,7 @@ export function generateMockExport(seed = 42): RawExportInput {
 
     // Sub-tasks under a few of the active sprint's stories.
     const activeStories = issues.filter(
-      (i) => i.teamId === team.id && i.type === "Story" && i.sprintIds[0] === teamSprints[2].id && i.status !== "To Do",
+      (i) => i.teamId === team.id && i.type === "flow-value" && i.sprintIds[0] === teamSprints[2].id && i.status !== "To Do",
     )
     for (const [n, parent] of activeStories.slice(0, 3).entries()) {
       const status = ["In Progress", "Done", "To Do"][n]
@@ -517,7 +525,7 @@ export function generateMockExport(seed = 42): RawExportInput {
 }
 
 /**
- * Platform's only two bugs. Too few similar tickets exist for suggestions, so
+ * Platform's only flow-defects. Too few similar tickets exist for suggestions, so
  * the active one's gaps (story points, priority) and the backlog one's (epic)
  * deliberately get none.
  */
@@ -529,7 +537,7 @@ function addHandWrittenIssues(issues: MockIssue[], sprints: RawSprint[]) {
     {
       key: "PLAT-1290",
       summary: "SSO: SAML login loops on Safari",
-      type: "Bug",
+      type: "flow-defect",
       status: "In Progress",
       statusCategory: "indeterminate",
       priority: null,
@@ -551,7 +559,7 @@ function addHandWrittenIssues(issues: MockIssue[], sprints: RawSprint[]) {
     {
       key: "PLAT-1291",
       summary: "Rate limits: 429 responses missing Retry-After",
-      type: "Bug",
+      type: "flow-defect",
       status: "Done",
       statusCategory: "done",
       priority: "High",
@@ -575,7 +583,7 @@ function addHandWrittenIssues(issues: MockIssue[], sprints: RawSprint[]) {
     {
       key: "PLAT-1292",
       summary: "Webhook retries ignore 429 responses",
-      type: "Bug",
+      type: "flow-defect",
       status: "To Do",
       statusCategory: "new",
       priority: "Medium",
@@ -615,7 +623,7 @@ type Where = {
 /** One line of the plan: `count` tickets matching `where` each get every gap in `gaps`. */
 type PlanLine = { where: Where; gaps: Gap[]; count: number }
 
-const STORY_BUG: MockIssue["type"][] = ["Story", "Bug"]
+const VALUE_DEFECT: MockIssue["type"][] = ["flow-value", "flow-defect"]
 const IN_FLIGHT = ["In Progress", "In Review", "Blocked"]
 
 /**
@@ -625,38 +633,38 @@ const IN_FLIGHT = ["In Progress", "In Review", "Blocked"]
  */
 const GAP_PLAN: PlanLine[] = [
   // Platform: nearly clean (PLAT-1290 and PLAT-1292 are hand-written with their gaps).
-  { where: { team: "TEAM-PLAT", sprint: "active", type: ["Story"] }, gaps: ["priority"], count: 1 },
+  { where: { team: "TEAM-PLAT", sprint: "active", type: ["flow-value"] }, gaps: ["priority"], count: 1 },
 
   // Mobile: mixed.
-  { where: { team: "TEAM-MOB", sprint: "active", type: ["Story"] }, gaps: ["storyPoints"], count: 2 },
-  { where: { team: "TEAM-MOB", sprint: "active", type: ["Story"] }, gaps: ["storyPoints", "epic"], count: 1 },
-  { where: { team: "TEAM-MOB", sprint: "active", type: ["Story", "Bug", "Task"], status: IN_FLIGHT }, gaps: ["assignee"], count: 1 },
-  { where: { team: "TEAM-MOB", sprint: "active", status: ["Done"], type: ["Story", "Task", "Bug"] }, gaps: ["resolved"], count: 1 },
-  { where: { team: "TEAM-MOB", sprint: "active", type: ["Task"] }, gaps: ["labels"], count: 1 },
-  { where: { team: "TEAM-MOB", sprint: "active", type: ["Bug"] }, gaps: ["priority"], count: 1 },
+  { where: { team: "TEAM-MOB", sprint: "active", type: ["flow-value"] }, gaps: ["storyPoints"], count: 2 },
+  { where: { team: "TEAM-MOB", sprint: "active", type: ["flow-value"] }, gaps: ["storyPoints", "epic"], count: 1 },
+  { where: { team: "TEAM-MOB", sprint: "active", type: ["flow-value", "flow-defect", "flow-quality"], status: IN_FLIGHT }, gaps: ["assignee"], count: 1 },
+  { where: { team: "TEAM-MOB", sprint: "active", status: ["Done"], type: ["flow-value", "flow-quality", "flow-defect"] }, gaps: ["resolved"], count: 1 },
+  { where: { team: "TEAM-MOB", sprint: "active", type: ["Spike"] }, gaps: ["labels"], count: 1 },
+  { where: { team: "TEAM-MOB", sprint: "active", type: ["flow-defect"] }, gaps: ["priority"], count: 1 },
   { where: { team: "TEAM-MOB", sprint: "active", type: ["Sub-task"], status: ["In Progress"] }, gaps: ["assignee"], count: 1 },
-  { where: { team: "TEAM-MOB", sprint: "future", type: ["Story"] }, gaps: ["storyPoints"], count: 1 },
+  { where: { team: "TEAM-MOB", sprint: "future", type: ["flow-value"] }, gaps: ["storyPoints"], count: 1 },
   { where: { team: "TEAM-MOB", sprint: "closed", status: ["Done"] }, gaps: ["resolved"], count: 1 },
-  { where: { team: "TEAM-MOB", sprint: "backlog", type: ["Story", "Task"] }, gaps: ["sprint"], count: 1 },
+  { where: { team: "TEAM-MOB", sprint: "backlog", type: ["flow-value", "flow-quality"] }, gaps: ["sprint"], count: 1 },
 
   // Web: poor.
-  { where: { team: "TEAM-WEB", sprint: "active", type: ["Story"], status: IN_FLIGHT }, gaps: ["storyPoints", "assignee", "epic"], count: 1 },
-  { where: { team: "TEAM-WEB", sprint: "active", type: STORY_BUG, status: IN_FLIGHT }, gaps: ["storyPoints", "assignee"], count: 1 },
-  { where: { team: "TEAM-WEB", sprint: "active", type: ["Story"] }, gaps: ["storyPoints"], count: 2 },
-  { where: { team: "TEAM-WEB", sprint: "active", type: ["Bug"] }, gaps: ["storyPoints"], count: 1 },
-  { where: { team: "TEAM-WEB", sprint: "active", type: ["Story", "Task", "Bug"], status: ["Done", "In Review"] }, gaps: ["assignee"], count: 2 },
-  { where: { team: "TEAM-WEB", sprint: "active", type: ["Story", "Task"] }, gaps: ["epic"], count: 2 },
+  { where: { team: "TEAM-WEB", sprint: "active", type: ["flow-value"], status: IN_FLIGHT }, gaps: ["storyPoints", "assignee", "epic"], count: 1 },
+  { where: { team: "TEAM-WEB", sprint: "active", type: VALUE_DEFECT, status: IN_FLIGHT }, gaps: ["storyPoints", "assignee"], count: 1 },
+  { where: { team: "TEAM-WEB", sprint: "active", type: ["flow-value"] }, gaps: ["storyPoints"], count: 2 },
+  { where: { team: "TEAM-WEB", sprint: "active", type: ["flow-defect"] }, gaps: ["storyPoints"], count: 1 },
+  { where: { team: "TEAM-WEB", sprint: "active", type: ["flow-value", "flow-quality", "flow-defect"], status: ["Done", "In Review"] }, gaps: ["assignee"], count: 2 },
+  { where: { team: "TEAM-WEB", sprint: "active", type: ["flow-value", "flow-quality"] }, gaps: ["epic"], count: 2 },
   { where: { team: "TEAM-WEB", sprint: "active", status: ["Done"] }, gaps: ["resolved"], count: 1 },
-  { where: { team: "TEAM-WEB", sprint: "active", type: ["Story", "Bug"] }, gaps: ["priority"], count: 2 },
-  { where: { team: "TEAM-WEB", sprint: "active", type: ["Task", "Spike"] }, gaps: ["labels"], count: 2 },
-  { where: { team: "TEAM-WEB", sprint: "active", type: ["Story"] }, gaps: ["team"], count: 1 },
+  { where: { team: "TEAM-WEB", sprint: "active", type: VALUE_DEFECT }, gaps: ["priority"], count: 2 },
+  { where: { team: "TEAM-WEB", sprint: "active", type: ["Spike"] }, gaps: ["labels"], count: 2 },
+  { where: { team: "TEAM-WEB", sprint: "active", type: ["flow-value"] }, gaps: ["team"], count: 1 },
   { where: { team: "TEAM-WEB", sprint: "active", type: ["Sub-task"], status: ["In Progress"] }, gaps: ["assignee"], count: 1 },
-  { where: { team: "TEAM-WEB", sprint: "future", type: ["Story"] }, gaps: ["storyPoints"], count: 3 },
+  { where: { team: "TEAM-WEB", sprint: "future", type: ["flow-value"] }, gaps: ["storyPoints"], count: 3 },
   { where: { team: "TEAM-WEB", sprint: "closed", status: ["Done"] }, gaps: ["resolved"], count: 2 },
-  { where: { team: "TEAM-WEB", sprint: "closed", type: ["Story"] }, gaps: ["storyPoints"], count: 1 },
-  { where: { team: "TEAM-WEB", sprint: "backlog", type: ["Story", "Task"] }, gaps: ["epic"], count: 2 },
-  { where: { team: "TEAM-WEB", sprint: "backlog", type: ["Story", "Bug"] }, gaps: ["priority"], count: 1 },
-  { where: { team: "TEAM-WEB", sprint: "backlog", type: ["Story", "Task"] }, gaps: ["sprint"], count: 1 },
+  { where: { team: "TEAM-WEB", sprint: "closed", type: ["flow-value"] }, gaps: ["storyPoints"], count: 1 },
+  { where: { team: "TEAM-WEB", sprint: "backlog", type: ["flow-value", "flow-quality"] }, gaps: ["epic"], count: 2 },
+  { where: { team: "TEAM-WEB", sprint: "backlog", type: VALUE_DEFECT }, gaps: ["priority"], count: 1 },
+  { where: { team: "TEAM-WEB", sprint: "backlog", type: ["flow-value", "flow-quality"] }, gaps: ["sprint"], count: 1 },
 ]
 
 function sprintKind(issue: MockIssue, stateOf: Map<number, string>): Where["sprint"] {

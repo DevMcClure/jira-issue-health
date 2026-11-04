@@ -28,18 +28,18 @@ describe("checkIssue", () => {
   })
 
   it("orders gaps worst first and reports the worst severity", () => {
-    const health = checkIssue(makeIssue({ type: "Task", priority: null, epicKey: null, assigneeId: null, labels: [] }))
+    const health = checkIssue(makeIssue({ type: "flow-quality", priority: null, epicKey: null, assigneeId: null, sprintIds: [] }))
     expect(health.gaps.map((g) => [g.field, g.severity])).toEqual([
       ["assigneeId", "critical"],
+      ["sprintIds", "warning"],
       ["epicKey", "warning"],
       ["priority", "info"],
-      ["labels", "info"],
     ])
     expect(health.severity).toBe("critical")
   })
 
   it("collects the affected views once each", () => {
-    const health = checkIssue(makeIssue({ storyPoints: null, sprintIds: [], statusCategory: "inProgress", type: "Bug" }))
+    const health = checkIssue(makeIssue({ storyPoints: null, sprintIds: [], statusCategory: "inProgress", type: "flow-defect" }))
     // Out of a sprint, points aren't required, but the sprint is.
     expect(health.gaps.map((g) => g.field)).toEqual(["sprintIds"])
     expect(health.affects).toEqual(["commitment", "sprint-burndown", "scope-change"])
@@ -61,9 +61,9 @@ describe("checkIssue", () => {
 
   it("follows custom rules", () => {
     const rules = DEFAULT_REQUIRED_FIELDS.map((r) =>
-      r.field === "storyPoints" ? { ...r, requiredFor: ["Story" as const], severity: "info" as const } : r,
+      r.field === "storyPoints" ? { ...r, requiredFor: ["flow-value" as const], severity: "info" as const } : r,
     )
-    expect(checkIssue(makeIssue({ type: "Bug", storyPoints: null }), rules).gaps).toEqual([])
+    expect(checkIssue(makeIssue({ type: "flow-defect", storyPoints: null }), rules).gaps).toEqual([])
     expect(checkIssue(makeIssue({ storyPoints: null }), rules).severity).toBe("info")
   })
 })

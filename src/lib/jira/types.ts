@@ -10,7 +10,16 @@ export type StatusCategory = "todo" | "inProgress" | "done"
 export type SprintState = "future" | "active" | "closed"
 
 /** The issue types the required-field rules know about. Other types pass through as plain strings. */
-export const ISSUE_TYPES = ["Story", "Bug", "Task", "Spike", "Epic", "Sub-task"] as const
+/** Flow types first; the order is the settings panel's column order. */
+export const ISSUE_TYPES = [
+  "flow-value",
+  "flow-quality",
+  "flow-defect",
+  "flow-accelerator",
+  "Spike",
+  "Epic",
+  "Sub-task",
+] as const
 export type IssueType = (typeof ISSUE_TYPES)[number]
 
 export type Meta = {

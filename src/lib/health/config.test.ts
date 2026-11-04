@@ -26,15 +26,15 @@ describe("required-fields config", () => {
     expect(isDefaultConfig(DEFAULT_CONFIG)).toBe(true)
   })
 
-  it("unticking Story points for Bug takes Bugs off the list", () => {
+  it("unticking Story points for flow-defect takes those tickets off the list", () => {
     const dataset = parseExportText(sample)
-    const unticked = setRequired(DEFAULT_CONFIG, "storyPoints", "Bug", false)
-    const bugsMissingPoints = (rules = DEFAULT_REQUIRED_FIELDS) =>
-      applyFilters(checkDataset(dataset, rules), { ...DEFAULT_FILTERS, sprint: "all", types: ["Bug"], fields: ["storyPoints"] }, dataset).rows.length
-    expect(bugsMissingPoints()).toBeGreaterThan(0)
-    expect(bugsMissingPoints(rulesFromConfig(unticked))).toBe(0)
+    const unticked = setRequired(DEFAULT_CONFIG, "storyPoints", "flow-defect", false)
+    const defectsMissingPoints = (rules = DEFAULT_REQUIRED_FIELDS) =>
+      applyFilters(checkDataset(dataset, rules), { ...DEFAULT_FILTERS, sprint: "all", types: ["flow-defect"], fields: ["storyPoints"] }, dataset).rows.length
+    expect(defectsMissingPoints()).toBeGreaterThan(0)
+    expect(defectsMissingPoints(rulesFromConfig(unticked))).toBe(0)
     expect(isDefaultConfig(unticked)).toBe(false)
-    expect(isDefaultConfig(setRequired(unticked, "storyPoints", "Bug", true))).toBe(true)
+    expect(isDefaultConfig(setRequired(unticked, "storyPoints", "flow-defect", true))).toBe(true)
   })
 
   it("changes a field's severity", () => {
@@ -43,17 +43,28 @@ describe("required-fields config", () => {
   })
 
   it("keeps the rules' type order whatever order types were ticked in", () => {
-    const config = setRequired(setRequired(DEFAULT_CONFIG, "epicKey", "Spike", true), "epicKey", "Story", false)
-    expect(rulesFromConfig(config).find((r) => r.field === "epicKey")?.requiredFor).toEqual(["Bug", "Task", "Spike"])
+    const config = setRequired(setRequired(DEFAULT_CONFIG, "epicKey", "Spike", true), "epicKey", "flow-value", false)
+    expect(rulesFromConfig(config).find((r) => r.field === "epicKey")?.requiredFor).toEqual([
+      "flow-quality",
+      "flow-defect",
+      "flow-accelerator",
+      "Spike",
+    ])
   })
 
   it("survives a refresh, and forgets itself when back to the defaults", () => {
     const storage = memoryStorage()
-    const changed = setRequired(DEFAULT_CONFIG, "storyPoints", "Bug", false)
+    const changed = setRequired(DEFAULT_CONFIG, "storyPoints", "flow-defect", false)
     expect(saveConfig(storage, changed)).toBe(true)
     expect(loadConfig(storage)).toEqual(changed)
     saveConfig(storage, DEFAULT_CONFIG)
     expect(storage.map.has(CONFIG_STORAGE_KEY)).toBe(false)
+  })
+
+  it("falls back to the defaults for a config saved with old issue types", () => {
+    const storage = memoryStorage()
+    storage.setItem(CONFIG_STORAGE_KEY, JSON.stringify({ schemaVersion: 1, fields: { storyPoints: { requiredFor: ["Story", "Bug"], severity: "critical" } } }))
+    expect(loadConfig(storage)).toEqual(DEFAULT_CONFIG)
   })
 
   it("falls back to the defaults for invalid or unreadable storage", () => {
@@ -71,9 +82,9 @@ describe("required-fields config", () => {
 
   it("fills fields a saved config doesn't mention from the defaults", () => {
     const storage = memoryStorage()
-    storage.setItem(CONFIG_STORAGE_KEY, JSON.stringify({ schemaVersion: 1, fields: { labels: { requiredFor: ["Task"], severity: "warning" } } }))
+    storage.setItem(CONFIG_STORAGE_KEY, JSON.stringify({ schemaVersion: 1, fields: { labels: { requiredFor: ["flow-quality"], severity: "warning" } } }))
     const config = loadConfig(storage)
-    expect(config.fields.labels).toEqual({ requiredFor: ["Task"], severity: "warning" })
+    expect(config.fields.labels).toEqual({ requiredFor: ["flow-quality"], severity: "warning" })
     expect(config.fields.storyPoints).toEqual(DEFAULT_CONFIG.fields.storyPoints)
   })
 })
