@@ -10,6 +10,10 @@ export default defineConfig(({ mode }) => {
     // GitHub Pages serves the site from /<repo>/; CI sets VITE_BASE_PATH. Locally it's "/".
     base: env.VITE_BASE_PATH || '/',
     plugins: [react(), tailwindcss()],
+    server: {
+      // `pnpm dev:live`: the web app talks to the local server (`pnpm dev:server`) on the same origin.
+      proxy: { '/api': { target: env.API_PROXY_TARGET || 'http://127.0.0.1:8787', changeOrigin: false } },
+    },
     build: {
       // The mock export loads as its own chunk. The entry is still ~600 KB (React, Radix, cmdk, zod),
       // all needed before the first render, hence the raised limit (the same as the Jira Dashboard's).

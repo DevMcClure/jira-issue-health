@@ -1,37 +1,33 @@
+import type { Fix } from "../api/contract"
 import type { TicketHealth } from "../health/checks"
-import { applyFilters, compareKeys, type Filters } from "../health/list"
+import { compareKeys, inScope, type Filters } from "../health/list"
 import type { JiraDataset } from "../jira/types"
-import type { Resolution } from "./types"
+
+/** Each ticket's fixes, oldest first. */
+export function fixesByIssue(fixes: readonly Fix[]): Map<string, Fix[]> {
+  const out = new Map<string, Fix[]>()
+  for (const f of [...fixes].sort((a, b) => a.at.localeCompare(b.at))) out.set(f.issueKey, [...(out.get(f.issueKey) ?? []), f])
+  return out
+}
 
 type Input = {
-  /** Health of the data as loaded. */
-  baseHealth: TicketHealth[]
-  baseDataset: Pick<JiraDataset, "teams" | "sprintById">
-  /** Health with local resolutions applied, by key. */
-  current: Map<string, TicketHealth>
-  byIssue: Map<string, Resolution[]>
+  health: readonly TicketHealth[]
+  byIssue: ReadonlyMap<string, Fix[]>
   filters: Filters
+  dataset: Pick<JiraDataset, "teams" | "sprintById">
 }
 
 /**
- * Tickets this filter would list if they hadn't been fixed locally, and that now
- * have no gaps: what "Show resolved" brings back. Matched on their original gaps, sorted by key.
+ * Tickets in this slice of work that were fixed through Resolve and now have no
+ * gaps: what "Show fixed" brings back, by key.
  */
-export function resolvedRows({ baseHealth, baseDataset, current, byIssue, filters }: Input): TicketHealth[] {
-  return applyFilters(baseHealth, filters, baseDataset)
-    .rows.filter((h) => byIssue.has(h.issue.key) && current.get(h.issue.key)?.gaps.length === 0)
-    .map((h) => current.get(h.issue.key)!)
+export function fixedRows({ health, byIssue, filters, dataset }: Input): TicketHealth[] {
+  return health
+    .filter(
+      (h) =>
+        h.gaps.length === 0 &&
+        byIssue.get(h.issue.key)?.some((f) => f.via === "app") &&
+        inScope(h.issue, filters, dataset),
+    )
     .sort((a, b) => compareKeys(a.issue.key, b.issue.key))
-}
-
-/** Tickets in this filter fixed locally: fully (no gaps left) or partly. */
-export function resolvedCounts({ baseHealth, baseDataset, current, byIssue, filters }: Input): { full: number; partial: number } {
-  let full = 0
-  let partial = 0
-  for (const h of applyFilters(baseHealth, filters, baseDataset).rows) {
-    if (!byIssue.has(h.issue.key)) continue
-    if (current.get(h.issue.key)?.gaps.length === 0) full++
-    else partial++
-  }
-  return { full, partial }
 }

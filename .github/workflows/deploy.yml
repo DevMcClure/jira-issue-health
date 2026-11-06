@@ -43,11 +43,16 @@ jobs:
       - run: pnpm typecheck
       - run: pnpm test
 
+      # The server isn't deployed from here; this only checks it still bundles.
+      - run: pnpm build:server
+
       - name: Build
         run: pnpm build
         env:
           # Project sites are served from /<repo-name>/.
           VITE_BASE_PATH: /${{ github.event.repository.name }}/
+          # GitHub Pages has no server: everything runs in the browser, with a mock Jira.
+          VITE_DATA_MODE: demo
           # Optional repository variable: where "Jira Dashboard" in the product switcher links to.
           VITE_DASHBOARD_URL: ${{ vars.VITE_DASHBOARD_URL }}
 

@@ -1,5 +1,17 @@
 import { parseExportText } from "@/lib/jira/adapter"
-import type { DataSource, FileLike, LoadedData } from "./data-source"
+import type { JiraDataset } from "@/lib/jira/types"
+import type { DataOrigin, FileLike } from "./data-source"
+
+/** A dataset from the bundled sample or a file the person loaded. */
+export type FileData = { dataset: JiraDataset; origin: Extract<DataOrigin, { kind: "sample" | "upload" }> }
+
+/** The demo's data: the bundled sample, or a file processed in this browser only. */
+export interface FileSource {
+  /** The remembered upload if it's still valid, else the sample. */
+  load(): Promise<FileData>
+  loadFile(file: FileLike): Promise<{ data: FileData; remembered: boolean }>
+  reset(): Promise<FileData>
+}
 
 /** localStorage key for the last loaded file. */
 export const UPLOAD_STORAGE_KEY = "jira-health:upload"
@@ -17,11 +29,11 @@ type Options = {
 const bundledSample = () => import("@/data/mock/trawler-export.json?raw").then((m) => m.default)
 
 /** The bundled mock export, plus a file the user loads, remembered in this browser only. */
-export function createStaticDataSource({ loadSample = bundledSample, storage = defaultStorage() }: Options = {}): DataSource {
-  let sample: Promise<LoadedData> | null = null
+export function createStaticDataSource({ loadSample = bundledSample, storage = defaultStorage() }: Options = {}): FileSource {
+  let sample: Promise<FileData> | null = null
 
   const sampleData = () => {
-    sample ??= loadSample().then((text) => ({ dataset: parseExportText(text), origin: { kind: "sample" } }) satisfies LoadedData)
+    sample ??= loadSample().then((text) => ({ dataset: parseExportText(text), origin: { kind: "sample" } }) satisfies FileData)
     // A failed load can be retried.
     sample.catch(() => (sample = null))
     return sample

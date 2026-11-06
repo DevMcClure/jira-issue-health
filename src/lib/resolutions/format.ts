@@ -1,41 +1,36 @@
-import { format } from "date-fns"
+import { updateFields, type JiraUpdate, type UpdateField } from "../api/contract"
 import type { JiraDataset } from "../jira/types"
-import type { ResolutionValues, ResolvableField } from "./types"
 
-export const FIELD_LABEL: Record<ResolvableField, string> = {
+export const UPDATE_LABEL: Record<UpdateField, string> = {
   storyPoints: "Story points",
   assigneeId: "Assignee",
   epicKey: "Epic",
-  sprintIds: "Sprint",
+  sprintId: "Sprint",
   priority: "Priority",
   labels: "Labels",
-  resolved: "Resolved date",
+  resolution: "Resolution",
 }
 
-/** "Story points → 3", "Assignee → Sofia Lindqvist", … for each value entered. */
-export function describeValues(values: ResolutionValues, dataset: Pick<JiraDataset, "personById" | "sprintById">): string[] {
-  return (Object.keys(values) as ResolvableField[]).map((field) => {
-    const v = values[field]
+/** "Story points → 3", "Assignee → Sofia Lindqvist", … for each value sent. */
+export function describeUpdate(update: JiraUpdate, dataset: Pick<JiraDataset, "personById" | "sprintById">): string[] {
+  return updateFields(update).map((field) => {
     let text: string
     switch (field) {
       case "storyPoints":
-        text = `${v} ${v === 1 ? "pt" : "pts"}`
+        text = `${update.storyPoints} ${update.storyPoints === 1 ? "pt" : "pts"}`
         break
       case "assigneeId":
-        text = dataset.personById.get(v as string)?.displayName ?? String(v)
+        text = dataset.personById.get(update.assigneeId!)?.displayName ?? update.assigneeId!
         break
-      case "sprintIds":
-        text = (v as number[]).map((id) => dataset.sprintById.get(id)?.name ?? String(id)).join(", ")
+      case "sprintId":
+        text = dataset.sprintById.get(update.sprintId!)?.name ?? String(update.sprintId)
         break
       case "labels":
-        text = (v as string[]).join(", ")
-        break
-      case "resolved":
-        text = format(new Date(v as string), "d MMM yyyy")
+        text = update.labels!.join(", ")
         break
       default:
-        text = String(v)
+        text = String(update[field])
     }
-    return `${FIELD_LABEL[field]} → ${text}`
+    return `${UPDATE_LABEL[field]} → ${text}`
   })
 }

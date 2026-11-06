@@ -28,10 +28,13 @@ type Props = {
   onChange: (next: Filters) => void
   groupBy: GroupBy
   onGroupByChange: (next: GroupBy) => void
-  showResolved: boolean
-  onShowResolvedChange: (next: boolean) => void
-  /** Tickets fixed locally in this filter. */
-  resolvedCount: number
+  showFixed: boolean
+  onShowFixedChange: (next: boolean) => void
+  /** Tickets in this view fixed with Resolve. */
+  fixedCount: number
+  /** Tickets listed, of all in this slice of work. */
+  shown: number
+  total: number
 }
 
 const SPRINT_STATE_LABEL = { active: "active", future: "next", closed: "closed" } as const
@@ -40,7 +43,7 @@ const sprintToValue = (s: SprintFilter) => (typeof s === "number" ? `sprint:${s}
 const valueToSprint = (v: string): SprintFilter => (v.startsWith("sprint:") ? Number(v.slice(7)) : (v as SprintFilter))
 
 /** Search, filters and group-by above the list. */
-export function TicketFilters({ filters, onChange, groupBy, onGroupByChange, showResolved, onShowResolvedChange, resolvedCount }: Props) {
+export function TicketFilters({ filters, onChange, groupBy, onGroupByChange, showFixed, onShowFixedChange, fixedCount, shown, total }: Props) {
   const { dataset } = useData()
   const set = (patch: Partial<Filters>) => onChange({ ...filters, ...patch })
 
@@ -57,7 +60,13 @@ export function TicketFilters({ filters, onChange, groupBy, onGroupByChange, sho
   }
 
   return (
-    <div className="flex flex-wrap items-center gap-2">
+    // On wide screens it sticks under the site header, so filters stay in reach down a long list.
+    // (On a phone the wrapped bar would cover half the screen, so it scrolls away.)
+    <div
+      className="flex flex-wrap items-center gap-2 @4xl:sticky @4xl:top-14 @4xl:z-20 @4xl:-mx-6 @4xl:border-b @4xl:bg-background/90 @4xl:px-6 @4xl:py-2 @4xl:backdrop-blur @4xl:supports-[backdrop-filter]:bg-background/75"
+      role="toolbar"
+      aria-label="Filter tickets"
+    >
       <div className="relative">
         <Search className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden />
         <Input
@@ -151,10 +160,13 @@ export function TicketFilters({ filters, onChange, groupBy, onGroupByChange, sho
       )}
 
       <div className="ml-auto flex flex-wrap items-center gap-x-4 gap-y-2">
+        <p className="text-xs text-muted-foreground tabular-nums" aria-live="polite">
+          {shown} of {total} {total === 1 ? "ticket" : "tickets"} need updates
+        </p>
         <div className="flex items-center gap-2">
-          <Checkbox id="show-resolved" checked={showResolved} onCheckedChange={(v) => onShowResolvedChange(v === true)} />
-          <Label htmlFor="show-resolved" className="text-xs font-normal">
-            Show resolved{resolvedCount > 0 && <span className="text-muted-foreground tabular-nums"> ({resolvedCount})</span>}
+          <Checkbox id="show-fixed" checked={showFixed} onCheckedChange={(v) => onShowFixedChange(v === true)} />
+          <Label htmlFor="show-fixed" className="text-xs font-normal">
+            Show fixed{fixedCount > 0 && <span className="text-muted-foreground tabular-nums"> ({fixedCount})</span>}
           </Label>
         </div>
         <div className="flex items-center gap-2">

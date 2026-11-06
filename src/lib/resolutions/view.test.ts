@@ -1,49 +1,37 @@
 import { describe, expect, it } from "vitest"
-import sample from "@/data/mock/trawler-export.json?raw"
-import { checkDataset } from "../health/checks"
+import type { Fix } from "../api/contract"
+import { checkIssue } from "../health/checks"
 import { DEFAULT_FILTERS } from "../health/list"
-import { parseExportText } from "../jira/adapter"
-import { applyResolutions, resolutionsByIssue } from "./overlay"
-import type { Resolution } from "./types"
-import { resolvedCounts, resolvedRows } from "./view"
+import { makeIssue } from "../health/test-issue"
+import { parseExport } from "../jira/adapter"
+import { fixedRows, fixesByIssue } from "./view"
 
-const dataset = parseExportText(sample)
-const baseHealth = checkDataset(dataset)
-const r = (issueKey: string, values: Resolution["values"]): Resolution => ({
+const dataset = parseExport({ sprints: [{ id: 1, name: "S1", state: "active", teamId: "TEAM-WEB" }], issues: [] })
+const fix = (issueKey: string, via: Fix["via"], at = "2026-11-04T10:00:00Z"): Fix => ({
+  id: `${issueKey}-${at}`,
   issueKey,
-  values,
-  resolvedAt: "2026-11-03T09:00:00Z",
-  source: "local-mock",
+  update: { storyPoints: 3 },
+  by: { id: "u", displayName: "U" },
+  at,
+  via,
   usedSuggestion: [],
 })
 
-function input(resolutions: Resolution[], filters = DEFAULT_FILTERS) {
-  const current = new Map(checkDataset(applyResolutions(dataset, resolutions)).map((h) => [h.issue.key, h]))
-  return { baseHealth, baseDataset: dataset, current, byIssue: resolutionsByIssue(resolutions), filters }
-}
-
-describe("show resolved", () => {
-  const fixes = [
-    r("WEB-877", { storyPoints: 3, assigneeId: "u-07", epicKey: "WEB-805" }), // all three gaps
-    r("PLAT-1290", { storyPoints: 2 }), // one of two
-  ]
-
-  it("brings back fully resolved tickets, without gaps", () => {
-    const rows = resolvedRows(input(fixes))
-    expect(rows.map((h) => h.issue.key)).toEqual(["WEB-877"])
-    expect(rows[0].gaps).toEqual([])
-    expect(rows[0].issue.storyPoints).toBe(3)
+describe("fixed tickets", () => {
+  it("lists tickets fixed with Resolve that now have nothing missing, in this view", () => {
+    const health = [
+      checkIssue(makeIssue({ key: "WEB-1" })),
+      checkIssue(makeIssue({ key: "WEB-2", storyPoints: null })),
+      checkIssue(makeIssue({ key: "WEB-3" })),
+      checkIssue(makeIssue({ key: "WEB-4", sprintIds: [] })),
+    ]
+    const byIssue = fixesByIssue([fix("WEB-1", "app"), fix("WEB-2", "app"), fix("WEB-3", "jira"), fix("WEB-4", "app")])
+    // WEB-2 still has a gap, WEB-3 was fixed in Jira directly, WEB-4 isn't in an active sprint.
+    expect(fixedRows({ health, byIssue, filters: DEFAULT_FILTERS, dataset }).map((h) => h.issue.key)).toEqual(["WEB-1"])
   })
 
-  it("matches the filters against the original gaps", () => {
-    expect(resolvedRows(input(fixes, { ...DEFAULT_FILTERS, fields: ["epicKey"] }))).toHaveLength(1)
-    expect(resolvedRows(input(fixes, { ...DEFAULT_FILTERS, fields: ["priority"] }))).toHaveLength(0)
-    expect(resolvedRows(input(fixes, { ...DEFAULT_FILTERS, teamIds: ["TEAM-MOB"] }))).toHaveLength(0)
-  })
-
-  it("counts full and partial local fixes in the filter", () => {
-    expect(resolvedCounts(input(fixes))).toEqual({ full: 1, partial: 1 })
-    expect(resolvedCounts(input(fixes, { ...DEFAULT_FILTERS, teamIds: ["TEAM-PLAT"] }))).toEqual({ full: 0, partial: 1 })
-    expect(resolvedCounts(input([]))).toEqual({ full: 0, partial: 0 })
+  it("orders each ticket's fixes oldest first", () => {
+    const byIssue = fixesByIssue([fix("WEB-1", "app", "2026-11-04T11:00:00Z"), fix("WEB-1", "app", "2026-11-04T09:00:00Z")])
+    expect(byIssue.get("WEB-1")!.map((f) => f.at)).toEqual(["2026-11-04T09:00:00Z", "2026-11-04T11:00:00Z"])
   })
 })

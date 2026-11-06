@@ -15,10 +15,12 @@ type Props = {
   suggestions?: { label: string; apply: () => void }[]
   evidence?: string
   error?: string
+  /** A note on how the field is set, under the control. */
+  hint?: string
 }
 
 /** One missing field in the Resolve dialog: label, why it matters, the control, and any suggestion with its evidence. */
-export function ResolveField({ gap, htmlFor, children, suggestions, evidence, error }: Props) {
+export function ResolveField({ gap, htmlFor, children, suggestions, evidence, error, hint }: Props) {
   const { icon: Icon, iconClass, label } = SEVERITY_META[gap.severity]
   const errorId = `${htmlFor}-error`
   return (
@@ -32,6 +34,7 @@ export function ResolveField({ gap, htmlFor, children, suggestions, evidence, er
         <p className="text-xs text-muted-foreground">{gap.why}</p>
       </div>
       <div aria-describedby={error ? errorId : undefined}>{children}</div>
+      {hint && <p className="text-xs text-muted-foreground">{hint}</p>}
       {suggestions && suggestions.length > 0 && (
         <div className="space-y-1 rounded-md border bg-muted/40 px-2.5 py-2">
           <div className="flex flex-wrap items-center gap-1.5">
